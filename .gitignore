@@ -1,0 +1,14 @@
+.idea/
+
+.env
+
+/.venv/
+venv/
+ENV/
+
+/.vscode/
+.vscode/
+
+.dockerignore
+endpoints.txt
+/auth/registration/
