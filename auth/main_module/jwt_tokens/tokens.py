@@ -26,7 +26,7 @@ class CustomBlacklistMixin(BlacklistMixin):
                 raise TokenError(_("Token is blacklisted"))
 
         def blacklist(self) -> None:
-
+            
             jti = self.payload[api_settings.JTI_CLAIM]
             exp = self.payload["exp"]
         
