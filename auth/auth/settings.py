@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+
+env_path = '.env.2'
+load_dotenv(env_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,13 +26,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1jed2_tnzlh9*h&rdvc!%63pq-1y0=a%u(fzww79o1(gm0$w6n'
-
+SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+
 AUTH_USER_MODEL = 'main_module.CustomUser'
+
+#CSRF_TRUSTED_ORIGINS = ['http://localhost:1337'] 
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # Application definition
@@ -39,10 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
     'djoser',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
+    #'rest_framework_simplejwt.token_blacklist',
     'main_module',
     'registration'
 ]
@@ -81,14 +89,15 @@ WSGI_APPLICATION = 'auth.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'auth_db',  
-        'USER': 'postgres',    
-        'PASSWORD': '11513', 
-        'HOST': 'localhost',  
-        'PORT': '5432', 
+    "default": {
+        "ENGINE": os.environ.get("SQL_ENGINE"),
+        "NAME": os.environ.get("SQL_DATABASE", 'auth_db'),
+        "USER": os.environ.get("SQL_USER"),
+        "PASSWORD": os.environ.get("SQL_PASSWORD"),
+        "HOST": os.environ.get("SQL_HOST", "localhost"),
+        "PORT": os.environ.get("SQL_PORT"),
     }
 }
 
@@ -168,9 +177,11 @@ DJOSER = {
         },
 }
 
+BLACKLIST_USE = True 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=2),
-    "REFRESH_TOKEN_LIFETIME": timedelta(minutes=5),
+
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=40),
+    "REFRESH_TOKEN_LIFETIME": timedelta(minutes=50),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
@@ -200,7 +211,8 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=2),
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(minutes=5),
 
-    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+    "TOKEN_OBTAIN_SERIALIZER": "main_module.jwt_tokens.serializers.CustomTokenObtainPairSerializer",
+    #"TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
     "TOKEN_REFRESH_SERIALIZER": "main_module.jwt_tokens.serializers.CustomTokenRefreshSerializer",
     "TOKEN_VERIFY_SERIALIZER": "rest_framework_simplejwt.serializers.TokenVerifySerializer",
     "TOKEN_BLACKLIST_SERIALIZER": "main_module.jwt_tokens.serializers.CustomTokenBlacklistSerializer",
@@ -208,11 +220,12 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
-CELERY_BROKER_URL = 'redis://localhost:6379'
-
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-
 CELERY_IMPORTS = ('main_module.tasks',)
 
-REDIS_HOST = 'localhost'
-REDIS_PORT = 6379
+# CELERY_BROKER_URL = 'redis://localhost:6379'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+
+CELERY_BROKER_URL = 'redis://auth_redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://auth_redis:6379/0'
+REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_PORT = os.environ.get("REDIS_PPRT")

@@ -7,7 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from rest_framework_simplejwt.tokens import RefreshToken
+#from rest_framework_simplejwt.tokens import RefreshToken
+from .jwt_tokens.tokens import CustomRefreshToken, redis_client
 
 from djoser.views import UserViewSet
 from djoser.compat import get_user_email
@@ -15,6 +16,10 @@ from djoser.compat import get_user_email
 from .models import CustomUser
 from .serializers import *
 
+from django.utils.timezone import now
+from .tasks import send_reset_password_email_task, send_reset_password_confirmation_email_task, send_activation_email_task, send_confirmation_email_task
+from django.contrib.sites.shortcuts import get_current_site
+from djoser import signals, utils
 
 class CustomUserListAPIView(generics.ListAPIView):
     queryset = CustomUser.objects.all()
@@ -60,12 +65,11 @@ class CustomUserViewSet(UserViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-from django.utils.timezone import now
-from .tasks import send_reset_password_email_task, send_reset_password_confirmation_email_task, send_activation_email_task, send_confirmation_email_task
-from django.contrib.sites.shortcuts import get_current_site
-from djoser import signals, utils
-
 class CustomRegistrationViewSet(UserViewSet):
+
+    @staticmethod
+    def notify_user_registration(user_id):
+        redis_client.publish('user_registration', user_id)
 
     def get_email_context(self, user):
         site = get_current_site(self.request)
@@ -76,6 +80,7 @@ class CustomRegistrationViewSet(UserViewSet):
             'site_name': getattr(settings, 'SITE_NAME', '') or site.name
         }
     
+    # обернуть в транзакцию?
     def perform_create(self, serializer, *args, **kwargs):
         user = serializer.save(*args, **kwargs)
         signals.user_registered.send(
@@ -102,8 +107,9 @@ class CustomRegistrationViewSet(UserViewSet):
         signals.user_activated.send(
             sender=self.__class__, user=user, request=self.request
         )
-        refresh = RefreshToken.for_user(user)
+        refresh = CustomRefreshToken.for_user(user)
         access = refresh.access_token
+        self.notify_user_registration(user.id)
         if settings.SEND_CONFIRMATION_EMAIL:
             user = serializer.user
             context = self.get_email_context(user)

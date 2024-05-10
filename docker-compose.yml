@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    command: gunicorn auth.wsgi:application --bind 0.0.0.0:8002
+    container_name: auth
+    # expose:
+    #   - 8002
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./auth:/auth
+    env_file:
+      - ./.env.2
+    depends_on:
+      - db
+      - redis
+
+  db:
+    container_name: auth_db
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5436:5432"
+    volumes:
+      - local_auth_pgdata:/var/lib/postgresql/data
+    env_file:
+      - ./.env.2
+
+  redis:
+    container_name: auth_redis
+    image: redis:latest
+    restart: always
+    ports:
+      - "6378:6379"
+    env_file:
+      - ./.env.2
+
+  worker:
+    container_name: auth_worker
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    command: "python3 -m celery -A auth worker --loglevel=info"
+    depends_on:
+      - auth
+      - redis
+      - db
+    restart: on-failure
+    volumes:
+      - ./auth:/auth
+    env_file:
+      - ./.env.2
+
+
+  pgadmin:
+    container_name: auth_pgadmin4
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5052:80"
+
+
+volumes:
+  local_auth_pgdata:
+  
