@@ -1,5 +1,7 @@
 import pytest
 import os
+import redis
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -7,7 +9,10 @@ from rest_framework_simplejwt.exceptions import TokenError
 from main_module.jwt_tokens.tokens import CustomRefreshToken, redis_client
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "auth.settings"
+#settings.configure()
 
+# Придумать нормальный способ использовать redic_client для тестов.
+# Сейчас просто используются разные базы данных redis в зависимости от DEBUG = True/False
 @pytest.fixture
 def redis_client_fixture():
     yield

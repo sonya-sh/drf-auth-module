@@ -2,13 +2,12 @@ from django.urls import path, re_path, include
 from .views import *
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView, TokenBlacklistView
 from rest_framework.routers import DefaultRouter
-from .views import CustomUserViewSet, CustomPasswordResetViewSet, CustomRegistrationViewSet
 from rest_framework import routers
 from djoser.views import UserViewSet
 
 
 router = routers.SimpleRouter()
-router.register(r'users', CustomUserViewSet)
+router.register(r'users', UserViewSet)
 user_me_viewset = UserViewSet.as_view({
     'get': 'me',
     'put': 'me',

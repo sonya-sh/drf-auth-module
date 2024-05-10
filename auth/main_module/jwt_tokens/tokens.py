@@ -14,7 +14,7 @@ from rest_framework_simplejwt.utils import datetime_from_epoch, get_md5_hash_pas
 from datetime import datetime, timedelta
 
 redis_client = redis.StrictRedis(host=settings.REDIS_HOST,
-                                  port=settings.REDIS_PORT, db=0)
+                                  port=settings.REDIS_PORT, db=settings.REDIS_DB)
 
 
 class CustomBlacklistMixin(BlacklistMixin):

@@ -13,9 +13,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.conf import settings
 
-
-env_path = '.env.2'
+env_path = '.env'
 load_dotenv(env_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,6 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -52,7 +53,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     #'rest_framework_simplejwt.token_blacklist',
     'main_module',
-    'registration'
+    'registration',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -149,8 +151,8 @@ REST_FRAMEWORK = {
  
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-
-    ]
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 DJOSER = {
@@ -228,4 +230,19 @@ CELERY_IMPORTS = ('main_module.tasks',)
 CELERY_BROKER_URL = 'redis://auth_redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://auth_redis:6379/0'
 REDIS_HOST = os.environ.get("REDIS_HOST")
-REDIS_PORT = os.environ.get("REDIS_PPRT")
+REDIS_PORT = os.environ.get("REDIS_PORT")
+# REDIS_DB = 0
+# TEST_REDIS_DB = 1
+
+if settings.DEBUG:
+    REDIS_DB = 1
+else:
+    REDIS_DB = 0
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Auth-service',
+    'DESCRIPTION': 'Документация для тестирования auth-сервиса',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+
+}

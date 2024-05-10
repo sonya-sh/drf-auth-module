@@ -1,6 +1,11 @@
 from django import utils
+from djoser import signals, utils
 from djoser.conf import settings
+from djoser.views import UserViewSet
+from djoser.compat import get_user_email
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.contrib.sites.shortcuts import get_current_site
 
 from rest_framework import generics, status
 from rest_framework.decorators import action
@@ -9,17 +14,10 @@ from rest_framework.response import Response
 
 #from rest_framework_simplejwt.tokens import RefreshToken
 from .jwt_tokens.tokens import CustomRefreshToken, redis_client
-
-from djoser.views import UserViewSet
-from djoser.compat import get_user_email
-
 from .models import CustomUser
 from .serializers import *
-
-from django.utils.timezone import now
 from .tasks import send_reset_password_email_task, send_reset_password_confirmation_email_task, send_activation_email_task, send_confirmation_email_task
-from django.contrib.sites.shortcuts import get_current_site
-from djoser import signals, utils
+
 
 class CustomUserListAPIView(generics.ListAPIView):
     queryset = CustomUser.objects.all()
@@ -37,32 +35,6 @@ class CustomUserListAPIView(generics.ListAPIView):
 #             return Response({'detail': 'Successfully logged out.'}, status=status.HTTP_200_OK)
 #         except Exception as e:
 #             return Response({'detail': f'Error logging out: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# не работает
-from .signals import password_changed 
-
-class CustomUserViewSet(UserViewSet):
-    permission_classes = (IsAuthenticated,)
-    @action(["post"], detail=False)
-    def set_password(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        self.request.user.set_password(serializer.data["new_password"])
-        self.request.user.save()
-
-        if settings.PASSWORD_CHANGED_EMAIL_CONFIRMATION:
-            context = {"user": self.request.user}
-            to = [get_user_email(self.request.user)]
-            settings.EMAIL.password_changed_confirmation(self.request, context).send(to)
-
-        if settings.LOGOUT_ON_PASSWORD_CHANGE:
-            utils.logout_user(self.request)
-        elif settings.CREATE_SESSION_ON_LOGIN:
-            pass
-        password_changed.send(sender=self.__class__, user=request.user, request=request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CustomRegistrationViewSet(UserViewSet):
@@ -138,7 +110,6 @@ class CustomRegistrationViewSet(UserViewSet):
             send_activation_email_task.delay(context, to)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 
 class CustomPasswordResetViewSet(UserViewSet):
